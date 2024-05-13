@@ -1,0 +1,56 @@
+var upazila = roi.filter(ee.Filter.eq("NAME_3","Bandarban S."))
+Map.addLayer(upazila,{},"Bandarban S.")
+Map.centerObject(upazila)
+print(upazila)
+
+var collection = ee.ImageCollection("LANDSAT/LC09/C02/T1_L2")
+    .filterBounds(upazila)
+    .filterDate('2022-01-01','2022-12-31')
+  
+var addNDVI = function(image) {
+  var img = image.select("SR_B5","SR_B4")
+  var ndvi= img.normalizedDifference(['SR_B5','SR_B4']).rename('NDVI');
+  return image.addBands(ndvi);
+}
+
+var collectionNDVI = collection.map(addNDVI).mean();
+
+Map.addLayer(collectionNDVI.clip(upazila))
+
+var bareLand = collectionNDVI.select('NDVI').lt(0.1);
+var lowVegetation = collectionNDVI.select('NDVI').gte(0.1).and(collectionNDVI.select('NDVI').lt(0.4));
+var mediumVegetation= collectionNDVI.select('NDVI').gte(0.4).and (collectionNDVI.select('NDVI').lt(0.7));
+var highVegetation = collectionNDVI.select('NDVI').gte(0.7);
+
+var areaBL = bareLand .multiply(ee.Image.pixelArea()).reduceRegion({
+  reducer: ee.Reducer.sum(),
+  geometry: upazila,
+  scale: 30,
+  maxPixels: 1e9
+});
+
+var areaLV= lowVegetation .multiply(ee.Image.pixelArea()).reduceRegion({
+  reducer : ee.Reducer.sum(),
+  geometry: upazila,
+  scale: 30,
+  maxPixels: 1e9
+})
+
+var areaMV= mediumVegetation .multiply(ee.Image.pixelArea()).reduceRegion({
+  reducer : ee.Reducer.sum(),
+  geometry: upazila,
+  scale: 30,
+  maxPixels: 1e9
+})
+
+var areaHV= highVegetation .multiply(ee.Image.pixelArea()).reduceRegion({
+  reducer : ee.Reducer.sum(),
+  geometry: upazila,
+  scale: 30,
+  maxPixels: 1e9
+})
+
+print('Area of Bare land (in square m):', areaBL.get('NDVI'));
+print('Area of low vegetation  (in square m):', areaLV.get('NDVI'));
+print('Area of medium vegetation  (in square m):', areaMV.get('NDVI'));
+print('Area of high vegetation  (in square m):', areaHV.get('NDVI'));
