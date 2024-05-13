@@ -1,0 +1,15 @@
+var upazila = roi.filter(ee.Filter.eq("NAME_3","Bandarban S."))
+Map.addLayer(upazila,{},"Bandarban S.")
+Map.centerObject(upazila)
+print(upazila)
+
+var images = ee.ImageCollection("LANDSAT/LC09/C02/T1_L2")
+     .filterBounds(upazila)
+     .filterDate("2021-01-01","2023-12-31")
+     .first()
+print(images)
+var nir = images.select("SR_B5")
+var swir = images.select("SR_B6")
+var ndmi = nir.subtract(swir).divide(nir.add(swir)).rename("NDMI");
+print(ndmi)
+Map.addLayer(ndmi.clip(upazila),{min:0, max:1,palette: ["black", "yellow", "green"]})
