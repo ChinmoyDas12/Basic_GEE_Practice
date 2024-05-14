@@ -1,0 +1,42 @@
+var upazila = roi.filter(ee.Filter.eq("NAME_3","Bandarban S."))
+Map.addLayer(upazila,{},"Bandarban S.")
+Map.centerObject(upazila)
+print(upazila)
+
+var images = ee.ImageCollection("LANDSAT/LC09/C02/T1_TOA")
+     .filterBounds(upazila)
+     .filterDate("2023-01-01","2023-12-31")
+     .median()
+     
+var ndvi = images.normalizedDifference(['B5', 'B4']).rename('NDVI');
+
+var ndmi = images.normalizedDifference(['B5', 'B6']).rename('NDMI');
+
+var ndviVis = {
+  min: -1,
+  max: 1,
+  palette: ['blue', 'white', 'green']
+};
+
+var ndmiVis = {
+  min: -1,
+  max: 1,
+  palette: ['brown', 'white', 'green']
+};
+
+var upazilaTransformed = upazila.geometry().transform('EPSG:4326', 1);
+
+var ndviurl = ndvi.visualize(ndviVis).getThumbURL({
+  region: upazilaTransformed,
+  dimensions: '2048x2048',
+  format: 'png'
+});
+
+var ndmiurl = ndmi.visualize(ndmiVis).getThumbURL({
+  region: upazilaTransformed,
+  dimensions: '2048x2048',
+  format: 'png'
+});
+
+print('NDVI PNG URL:', ndviurl);
+print('NDMI PNG URL:', ndmiurl);
